@@ -1,8 +1,11 @@
-/*
+.bibtex_manager_search {
+    width: calc(100% - 20px);
+}
 
-This CSS file will be included with your plugin, and
-available in the app when your plugin is enabled.
-
-If your plugin does not need CSS, delete this file.
-
-*/
+.bibtex_manager_template{
+	width: 100%;
+}
+.bibtex_manager_bibliography{
+	width: 100%;
+    min-height: 200px;
+}

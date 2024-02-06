@@ -1,6 +1,6 @@
 {
-	"id": "cite-manager",
-	"name": "Cite Manager",
+	"id": "obsidian-bibtex-manager",
+	"name": "BibTeX Manager",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "Create notes based on different citation files.",

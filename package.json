@@ -23,6 +23,7 @@
 	},
 	"dependencies": {
 		"@popperjs/core": "^2.11.8",
-		"@retorquere/bibtex-parser": "^7.0.11"
+		"@retorquere/bibtex-parser": "^7.0.11",
+		"citeproc": "^2.4.63"
 	}
 }

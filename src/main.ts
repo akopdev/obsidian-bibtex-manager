@@ -2,6 +2,7 @@ import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TF
 import { FileSuggest } from './suggest/FolderSuggester';
 import { parse } from "@retorquere/bibtex-parser";
 import { Entry } from "@retorquere/bibtex-parser/grammar";
+import { CitationGenerator } from "./citation-generator"
 
 interface BibTeXManagerSettings {
 	mySetting: string;
@@ -78,8 +79,8 @@ class InsertBibTexModal extends Modal {
 	}
 
 	async getTemplate(entry: Entry): Promise<string> {
-		const key = "template" + entry.type.charAt(0).toUpperCase() + entry.type.slice(1);
-		let template = this.template ? this.settings["template"+this.template] : this.settings[key];
+		const templateName = entry.type.charAt(0).toUpperCase() + entry.type.slice(1);
+		let template = this.template ? this.settings["template" + this.template] : this.settings["template" + templateName];
 		if (!template) {
 			return "";
 		}
@@ -91,15 +92,30 @@ class InsertBibTexModal extends Modal {
 	}
 
 	async onSubmit(text: string) {
-		const editor = this.app.workspace.getActiveViewOfType(MarkdownView).editor;
+		const viewer = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!viewer) {
+			new Notice("No active editor");
+			return;
+		}
 		try {
+			const generator = new CitationGenerator("apa", false);
+			await generator.createEngine();
+
 			parse(text).entries.forEach(async (entry: Entry) => {
 				let file = await this.getTemplate(entry);
-				console.log(file)
-				Object.keys(entry.fields).forEach(key => {
-					file = file.replace("{{" + key + "}}", entry.fields[key]);
-				})
-				editor.replaceSelection(file+"\n");
+
+				// generate citation
+				generator.addCitation(entry);
+				const citation = generator.getBibliography();
+
+				// parse template
+				if (file) {
+					const fields = Object.assign({ "type": entry.type, "citekey": entry.key, "citation": citation }, entry.fields);
+					Object.keys(fields).forEach(key => {
+						file = file.replace("{{" + key + "}}", fields[key]);
+					})
+					viewer.editor.replaceSelection(file + "\n");
+				}
 			})
 		} catch (e) {
 			console.error(e);
@@ -109,22 +125,19 @@ class InsertBibTexModal extends Modal {
 
 	}
 
-	onOpen() {
+	async onOpen() {
 		const { contentEl } = this;
 
-
 		contentEl.createEl("h1", { text: "Bibliography" });
+
 
 		new Setting(contentEl)
 			.setName('Template')
 			.addDropdown((cb) => {
 				cb.addOption("", "Auto");
-				cb.addOptions(BIBTEX_TYPES, BIBTEX_TYPES)
+				cb.addOptions(BIBTEX_TYPES)
 				cb.onChange((value) => {
-					if (value != "") {
-						value = BIBTEX_TYPES[value]
-					}
-					this.template = value;
+					this.template = value ? BIBTEX_TYPES[value] : "";
 				});
 			});
 

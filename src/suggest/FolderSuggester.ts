@@ -1,11 +1,11 @@
 // Credits go to Liam's Periodic Notes Plugin: https://github.com/liamcain/obsidian-periodic-notes
+import { TAbstractFile, TFile, TFolder } from "obsidian";
 
-import { TAbstractFile, TFolder, TFile } from "obsidian";
 import { TextInputSuggest } from "./suggest";
 
 export class FileSuggest extends TextInputSuggest<TFile> {
   getSuggestions(inputStr: string): TFile[] {
-    const abstractFiles = app.vault.getAllLoadedFiles();
+    const abstractFiles = this.app.vault.getAllLoadedFiles();
     const files: TFile[] = [];
     const lowerCaseInputStr = inputStr.toLowerCase();
 
@@ -34,30 +34,30 @@ export class FileSuggest extends TextInputSuggest<TFile> {
 }
 
 export class FolderSuggest extends TextInputSuggest<TFolder> {
-    getSuggestions(inputStr: string): TFolder[] {
-        const abstractFiles = app.vault.getAllLoadedFiles();
-        const folders: TFolder[] = [];
-        const lowerCaseInputStr = inputStr.toLowerCase();
+  getSuggestions(inputStr: string): TFolder[] {
+    const abstractFiles = this.app.vault.getAllLoadedFiles();
+    const folders: TFolder[] = [];
+    const lowerCaseInputStr = inputStr.toLowerCase();
 
-        abstractFiles.forEach((folder: TAbstractFile) => {
-            if (
-                folder instanceof TFolder &&
-                folder.path.toLowerCase().contains(lowerCaseInputStr)
-            ) {
-                folders.push(folder);
-            }
-        });
+    abstractFiles.forEach((folder: TAbstractFile) => {
+      if (
+        folder instanceof TFolder &&
+        folder.path.toLowerCase().contains(lowerCaseInputStr)
+      ) {
+        folders.push(folder);
+      }
+    });
 
-        return folders;
-    }
+    return folders;
+  }
 
-    renderSuggestion(file: TFolder, el: HTMLElement): void {
-        el.setText(file.path);
-    }
+  renderSuggestion(file: TFolder, el: HTMLElement): void {
+    el.setText(file.path);
+  }
 
-    selectSuggestion(file: TFolder): void {
-        this.inputEl.value = file.path;
-        this.inputEl.trigger("input");
-        this.close();
-    }
+  selectSuggestion(file: TFolder): void {
+    this.inputEl.value = file.path;
+    this.inputEl.trigger("input");
+    this.close();
+  }
 }

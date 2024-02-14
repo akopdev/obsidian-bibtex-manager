@@ -5,7 +5,21 @@ import { Entry } from "@retorquere/bibtex-parser/grammar";
 import { CitationGenerator } from "./citation-generator"
 
 interface BibTeXManagerSettings {
-	mySetting: string;
+	templateArticle: string,
+	templateBook: string,
+	templateBooklet: string,
+	templateConference: string,
+	templateInbook: string,
+	templateIncollection: string,
+	templateInproceedings: string,
+	templateManual: string,
+	templateMastersthesis: string,
+	templateMisc: string,
+	templatePhdthesis: string,
+	templateProceedings: string,
+	templateTechreport: string,
+	templateUnpublished: string
+
 }
 
 const DEFAULT_SETTINGS: BibTeXManagerSettings = {
@@ -25,7 +39,7 @@ const DEFAULT_SETTINGS: BibTeXManagerSettings = {
 	templateUnpublished: ""
 }
 
-const BIBTEX_TYPES = [
+const BIBTEX_TYPES: Array<string> = [
 	"Article",
 	"Book",
 	"Booklet",
@@ -50,7 +64,7 @@ export default class BibTeXManager extends Plugin {
 
 		this.addCommand({
 			id: 'insert-bibtex',
-			name: 'Insert bibliography',
+			name: 'Insert',
 			callback: () => {
 				new InsertBibTexModal(this.app, this.settings).open();
 			}
@@ -69,7 +83,7 @@ export default class BibTeXManager extends Plugin {
 }
 
 class InsertBibTexModal extends Modal {
-	bibliography: string;
+	bibtex: string;
 	template: string;
 	settings: BibTeXManagerSettings;
 
@@ -99,18 +113,23 @@ class InsertBibTexModal extends Modal {
 		}
 		try {
 			const generator = new CitationGenerator("apa", false);
-			await generator.createEngine();
 
+			// @ts-ignore
 			parse(text).entries.forEach(async (entry: Entry) => {
 				let file = await this.getTemplate(entry);
-
-				// generate citation
-				generator.addCitation(entry);
-				const citation = generator.getBibliography();
-
-				// parse template
 				if (file) {
-					const fields = Object.assign({ "type": entry.type, "citekey": entry.key, "citation": citation }, entry.fields);
+					await generator.createEngine();
+					// generate citation
+					generator.addCitation(entry);
+
+					const mapping = {
+						"type": entry.type,
+						"citekey": (<any>entry).key,
+						"bibliography": generator.getBibliography(),
+						"citation": generator.getCitation((<any>entry).key)
+					}
+
+					const fields = Object.assign(mapping, entry.fields);
 					Object.keys(fields).forEach(key => {
 						file = file.replace("{{" + key + "}}", fields[key]);
 					})
@@ -135,7 +154,9 @@ class InsertBibTexModal extends Modal {
 			.setName('Template')
 			.addDropdown((cb) => {
 				cb.addOption("", "Auto");
-				cb.addOptions(BIBTEX_TYPES)
+				BIBTEX_TYPES.forEach((type) =>
+					cb.addOption(type, type));
+
 				cb.onChange((value) => {
 					this.template = value ? BIBTEX_TYPES[value] : "";
 				});
@@ -146,7 +167,7 @@ class InsertBibTexModal extends Modal {
 			.addTextArea(text => {
 				text.setPlaceholder('Enter your bibliography here')
 					.onChange((value) => {
-						this.bibliography = value
+						this.bibtex = value
 					});
 				text.inputEl.addClass("bibtex_manager_bibliography");
 			})
@@ -165,7 +186,7 @@ class InsertBibTexModal extends Modal {
 					.setCta()
 					.onClick(() => {
 						this.close();
-						this.onSubmit(this.bibliography);
+						this.onSubmit(this.bibtex);
 					}));
 
 	}
@@ -182,6 +203,7 @@ class BibTeXManagerSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: BibTeXManager) {
 		super(app, plugin);
 		this.plugin = plugin;
+		this.app = app;
 	}
 
 	display(): void {
@@ -196,7 +218,7 @@ class BibTeXManagerSettingTab extends PluginSettingTab {
 			new Setting(containerEl)
 				.setName(type)
 				.addSearch((cb) => {
-					new FileSuggest(cb.inputEl);
+					new FileSuggest(this.app, cb.inputEl);
 					cb.setValue(this.plugin.settings[`template${type}`])
 						.onChange((folder) => {
 							this.plugin.settings[`template${type}`] = folder;

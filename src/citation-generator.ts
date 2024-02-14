@@ -1,4 +1,4 @@
-import { Entry } from '@retorquere/bibtex-parser';
+import { Entry } from "@retorquere/bibtex-parser/grammar";
 import { Engine } from 'citeproc';
 import { getLocale, getStyle, Author, Citation } from './helpers';
 import { htmlToMarkdown } from 'obsidian';
@@ -31,7 +31,7 @@ export class CitationGenerator {
 				return locale;
 			},
 
-			retrieveItem: (id: number) => {
+			retrieveItem: (id: string) => {
 				return this.citations[id];
 			},
 		};
@@ -49,20 +49,26 @@ export class CitationGenerator {
 
 	addCitation(entry: Entry) {
 
+		// @ts-ignore
 		const citation: Citation = { "id": entry.key, "type": entry.type }
 
 		Object.keys(entry.fields).forEach((key) => {
 			if (key === "year") {
+
+				// TODO: check if entry contains month and transform it to date-parts
 				citation["issued"] = {
-					"date-parts": [[entry.fields[key].pop(), 1, 1]]
+					"date-parts": [[+entry.fields[key][0], 1, 1]]
 				}
 			} else {
-				citation[key] = entry.fields[key].pop()
+				citation[key] = entry.fields[key][0]
 			}
 		});
 
-		if (entry.creators.author) {
-			citation.author = new Array();
+
+		// @ts-ignore
+		if (entry.creators?.author) {
+			citation.author = new Array<Author>();
+			// @ts-ignore
 			entry.creators.author.forEach(creator => {
 				const author: Author = {}
 				if (creator.firstName) {
@@ -80,6 +86,19 @@ export class CitationGenerator {
 		this.citationIDs.push(citation.id);
 
 		return true;
+	}
+
+	getCitation(id: string): string {
+		const cite = this.engine.previewCitationCluster({
+			"citationID": id,
+			"citationItems": [this.citations[id]],
+			"properties": {
+				"index": 0,
+				"noteIndex": 1
+			}
+		}, [], [], "html");
+
+		return htmlToMarkdown(cite);
 	}
 
 	getBibliography(): string {

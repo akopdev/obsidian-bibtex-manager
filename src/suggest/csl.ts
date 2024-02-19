@@ -1,11 +1,17 @@
 import { TextInputSuggest } from "./suggest";
 import { cslList, CSLItem } from "../utils";
 
-export class CSLSuggest extends TextInputSuggest<string> {
+export class CSLSuggest extends TextInputSuggest<CSLItem> {
 	getSuggestions(inputStr: string): CSLItem[] {
 		const lowerCaseInputStr = inputStr.toLowerCase();
-		const listItem = cslList.filter((item: CSLItem) => item.label.toLowerCase().contains(lowerCaseInputStr))
-		return listItem
+		const items: Array<CSLItem> = [];
+		const listItem = cslList.forEach((item: CSLItem) => {
+			if (item.label.toLowerCase().contains(lowerCaseInputStr)) {
+				items.push(item);
+			}
+		});
+
+		return items
 	}
 
 	renderSuggestion(item: CSLItem, el: HTMLElement): void {

@@ -1,11 +1,20 @@
-.bibtex_manager_search {
-    width: calc(100% - 20px);
+.bibtex-manager-search {
+	width: calc(100% - 20px);
 }
 
-.bibtex_manager_template{
+.bibtex-manager-template {
 	width: 100%;
 }
-.bibtex_manager_bibliography{
+
+.bibtex-manager-template-container {
+	border: 0;
+}
+
+.bibtex-manager-template-container .setting-item-info {
+	display: none;
+}
+
+.bibtex-manager-template {
 	width: 100%;
-    min-height: 200px;
+	min-height: 200px;
 }

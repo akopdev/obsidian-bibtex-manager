@@ -1,10 +1,11 @@
 import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
-import { FileSuggest } from './suggest/FolderSuggester';
+import { FileSuggest, CSLSuggest } from './suggest';
 import { parse } from "@retorquere/bibtex-parser";
 import { Entry } from "@retorquere/bibtex-parser/grammar";
 import { CitationGenerator } from "./citation-generator"
 
-interface BibTeXManagerSettings {
+interface BibTexManagerSettings {
+	cslStyle: string,
 	templateArticle: string,
 	templateBook: string,
 	templateBooklet: string,
@@ -22,7 +23,8 @@ interface BibTeXManagerSettings {
 
 }
 
-const DEFAULT_SETTINGS: BibTeXManagerSettings = {
+const DEFAULT_SETTINGS: BibTexManagerSettings = {
+	cslStyle: "apa-6th-edition",
 	templateArticle: "",
 	templateBook: "",
 	templateBooklet: "",
@@ -56,8 +58,27 @@ const BIBTEX_TYPES: Array<string> = [
 	"Unpublished"
 ]
 
+export abstract class StringHelper {
+	public static sanitizeKeyString(key: string): string {
+		const allLowerCase = key.toLowerCase();
+		return allLowerCase.charAt(0).toUpperCase() + allLowerCase.slice(1);
+	}
+
+	public static trim(str: string, trim: string): string {
+		let start = 0;
+		let end = str.length;
+
+		while (start < end && str[start] === trim)
+			++start;
+
+		while (end > start && str[end - 1] === trim)
+			--end;
+
+		return (start > 0 || end < str.length) ? str.substring(start, end) : str;
+	}
+}
 export default class BibTeXManager extends Plugin {
-	settings: BibTeXManagerSettings;
+	settings: BibTexManagerSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -71,6 +92,29 @@ export default class BibTeXManager extends Plugin {
 		});
 
 		this.addSettingTab(new BibTeXManagerSettingTab(this.app, this));
+
+		this.registerMarkdownCodeBlockProcessor("bibtex", async (source: string, el, ctx) => {
+			const codeBlock = el.createEl("div").createEl("pre").createEl("code");
+
+			try {
+
+				console.log(this.settings.cslStyle)
+				const generator = new CitationGenerator(this.settings.cslStyle, false);
+				await generator.createEngine();
+
+				// @ts-ignore
+				const text = parse(source)
+				text.entries.forEach(async (entry: Entry) => {
+					generator.addCitation(entry);
+				})
+				const bib = generator.getBibliography()
+				codeBlock.createEl("span", { text: bib, cls: "bibtex key" });
+
+			} catch (exception) {
+				codeBlock.createEl("span", { text: "Invalid BibTeX format!", cls: "bibtex key" });
+			}
+		});
+
 	}
 
 	async loadSettings() {
@@ -85,9 +129,9 @@ export default class BibTeXManager extends Plugin {
 class InsertBibTexModal extends Modal {
 	bibtex: string;
 	template: string;
-	settings: BibTeXManagerSettings;
+	settings: BibTexManagerSettings;
 
-	constructor(app: App, settings: BibTeXManagerSettings) {
+	constructor(app: App, settings: BibTexManagerSettings) {
 		super(app);
 		this.settings = settings;
 	}
@@ -112,7 +156,7 @@ class InsertBibTexModal extends Modal {
 			return;
 		}
 		try {
-			const generator = new CitationGenerator("apa", false);
+			const generator = new CitationGenerator(this.settings.cslStyle, false);
 
 			// @ts-ignore
 			parse(text).entries.forEach(async (entry: Entry) => {
@@ -147,13 +191,22 @@ class InsertBibTexModal extends Modal {
 	async onOpen() {
 		const { contentEl } = this;
 
-		contentEl.createEl("h1", { text: "Bibliography" });
+		contentEl.createEl("h2", { text: "Insert BibTeX" });
 
 
 		new Setting(contentEl)
-			.setName('Template')
+			.addTextArea(text => {
+				text.setPlaceholder('Paste the content of your BibTeX file')
+					.onChange((value) => {
+						this.bibtex = value
+					});
+				text.inputEl.addClass("bibtex-manager-template");
+			}).setClass("bibtex-manager-template-container");
+
+		new Setting(contentEl)
+			.setName('Apply template')
 			.addDropdown((cb) => {
-				cb.addOption("", "Auto");
+				cb.addOption("", "Auto detect");
 				BIBTEX_TYPES.forEach((type) =>
 					cb.addOption(type, type));
 
@@ -162,15 +215,6 @@ class InsertBibTexModal extends Modal {
 				});
 			});
 
-		new Setting(contentEl)
-			.setName('BibTex')
-			.addTextArea(text => {
-				text.setPlaceholder('Enter your bibliography here')
-					.onChange((value) => {
-						this.bibtex = value
-					});
-				text.inputEl.addClass("bibtex_manager_bibliography");
-			})
 
 		new Setting(contentEl)
 			.addButton((btn) => {
@@ -211,8 +255,23 @@ class BibTeXManagerSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl("h1", { text: "Templates" });
 
+		new Setting(this.containerEl)
+			.setName("Citation style ID")
+			.addSearch((cb) => {
+				new CSLSuggest(this.app, cb.inputEl);
+				cb.setPlaceholder("CSL Style: style-name")
+					.setValue(this.plugin.settings.cslStyle)
+					.onChange((style) => {
+						this.plugin.settings.cslStyle = style
+						this.plugin.saveSettings();
+
+					});
+				// @ts-ignore
+				cb.containerEl.addClass("bibtex-manager-search");
+			});
+
+		containerEl.createEl('h2', { text: "Templates" });
 
 		BIBTEX_TYPES.forEach((type) => {
 			new Setting(containerEl)
@@ -225,7 +284,7 @@ class BibTeXManagerSettingTab extends PluginSettingTab {
 							this.plugin.saveSettings();
 						});
 					// @ts-ignore
-					cb.containerEl.addClass("bibtex_manager_search");
+					cb.containerEl.addClass("bibtex-manager-search");
 				});
 		});
 	}

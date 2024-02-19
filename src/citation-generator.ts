@@ -109,9 +109,10 @@ export class CitationGenerator {
 		this.engine.updateItems(this.citationIDs);
 
 		const bibliographyResult = this.engine.makeBibliography();
-		if (bibliographyResult[1]) {
-			return htmlToMarkdown(bibliographyResult[1][0])
-		}
-		return "";
+		const bibliography = Array<string>()
+		bibliographyResult[1]?.forEach((entry: string) => {
+			bibliography.push(htmlToMarkdown(entry) + "\n")
+		});
+		return bibliography.join("\n");
 	}
 }

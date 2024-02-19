@@ -102,8 +102,8 @@ export default class BibTeXManager extends Plugin {
 				const generator = new CitationGenerator(this.settings.cslStyle, false);
 				await generator.createEngine();
 
-				// @ts-ignore
 				const text = parse(source)
+				// @ts-ignore
 				text.entries.forEach(async (entry: Entry) => {
 					generator.addCitation(entry);
 				})

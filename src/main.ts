@@ -20,6 +20,7 @@ interface BibTexManagerSettings {
 	templateProceedings: string,
 	templateTechreport: string,
 	templateUnpublished: string
+	enableBibtexFormatting: boolean
 
 }
 
@@ -38,7 +39,8 @@ const DEFAULT_SETTINGS: BibTexManagerSettings = {
 	templatePhdthesis: "",
 	templateProceedings: "",
 	templateTechreport: "",
-	templateUnpublished: ""
+	templateUnpublished: "",
+	enableBibtexFormatting: false
 }
 
 const BIBTEX_TYPES: Array<string> = [
@@ -93,28 +95,27 @@ export default class BibTeXManager extends Plugin {
 
 		this.addSettingTab(new BibTeXManagerSettingTab(this.app, this));
 
-		this.registerMarkdownCodeBlockProcessor("bibtex", async (source: string, el, ctx) => {
-			const codeBlock = el.createEl("div").createEl("pre").createEl("code");
+		if (this.settings.enableBibtexFormatting) {
+			this.registerMarkdownCodeBlockProcessor("bibtex", async (source: string, el, ctx) => {
+				const codeBlock = el.createEl("div").createEl("pre").createEl("code");
 
-			try {
+				try {
+					const generator = new CitationGenerator(this.settings.cslStyle, false);
+					await generator.createEngine();
 
-				console.log(this.settings.cslStyle)
-				const generator = new CitationGenerator(this.settings.cslStyle, false);
-				await generator.createEngine();
+					const text = parse(source)
+					// @ts-ignore
+					text.entries.forEach(async (entry: Entry) => {
+						generator.addCitation(entry);
+					})
+					const bib = generator.getBibliography()
+					codeBlock.createEl("span", { text: bib, cls: "bibtex key" });
 
-				const text = parse(source)
-				// @ts-ignore
-				text.entries.forEach(async (entry: Entry) => {
-					generator.addCitation(entry);
-				})
-				const bib = generator.getBibliography()
-				codeBlock.createEl("span", { text: bib, cls: "bibtex key" });
-
-			} catch (exception) {
-				codeBlock.createEl("span", { text: "Invalid BibTeX format!", cls: "bibtex key" });
-			}
-		});
-
+				} catch (exception) {
+					codeBlock.createEl("span", { text: "Invalid BibTeX format!", cls: "bibtex key" });
+				}
+			});
+		}
 	}
 
 	async loadSettings() {
@@ -169,13 +170,16 @@ class InsertBibTexModal extends Modal {
 					const mapping = {
 						"type": entry.type,
 						"citekey": (<any>entry).key,
+						"id": (<any>entry).key,
 						"bibliography": generator.getBibliography(),
 						"citation": generator.getCitation((<any>entry).key)
 					}
 
 					const fields = Object.assign(mapping, entry.fields);
 					Object.keys(fields).forEach(key => {
-						file = file.replace("{{" + key + "}}", fields[key]);
+						const value = fields[key];
+						const regex = new RegExp(`{{(\\w+\\|)?${key}}}`, "g");
+						file = file.replace(regex, value);
 					})
 					viewer.editor.replaceSelection(file + "\n");
 				}
@@ -255,6 +259,7 @@ class BibTeXManagerSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
+		containerEl.createEl('h2', { text: "General" });
 
 		new Setting(this.containerEl)
 			.setName("Citation style ID")
@@ -270,6 +275,15 @@ class BibTeXManagerSettingTab extends PluginSettingTab {
 				// @ts-ignore
 				cb.containerEl.addClass("bibtex-manager-search");
 			});
+		new Setting(containerEl)
+			.setName('Render BibTeX code block as citation')
+			.addToggle(toggle => toggle
+				.setValue(this.plugin.settings.enableBibtexFormatting)
+				.onChange(async (value) => {
+					this.plugin.settings.enableBibtexFormatting = value;
+					await this.plugin.saveSettings();
+					new Notice("Please reload the app to apply the changes")
+				}));
 
 		containerEl.createEl('h2', { text: "Templates" });
 

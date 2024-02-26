@@ -1,11 +1,10 @@
 {
 	"id": "obsidian-bibtex-manager",
 	"name": "BibTeX Manager",
-	"version": "1.0.0",
+	"version": "0.7.0",
 	"minAppVersion": "0.15.0",
-	"description": "Create notes based on different citation files.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Create notes and citations from BibTeX files.",
+	"author": "Akop Kesheshyan",
+	"authorUrl": "https://github.com/akopdev",
 	"isDesktopOnly": false
 }

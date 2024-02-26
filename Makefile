@@ -26,7 +26,7 @@ build:
 #  release: @ Create a new release
 #  -------------------------------------------------------------------------------------------------
 release:
-	$(eval VERSION := $(shell cat package.json | jq -r '.version'))
+	$(eval VERSION := $(shell cat manifest.json | jq -r '.version'))
 	@git tag $(VERSION)
 	@git push origin --tags
 	@echo "Release $(VERSION) successfully created!"

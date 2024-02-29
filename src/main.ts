@@ -1,5 +1,5 @@
 import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
-import { FileSuggest, CSLSuggest } from './suggest';
+import { FileSuggest, FolderSuggest, CSLSuggest } from './suggest';
 import { parse } from "@retorquere/bibtex-parser";
 import { Entry } from "@retorquere/bibtex-parser/grammar";
 import { CitationGenerator } from "./citation-generator"
@@ -21,6 +21,9 @@ interface BibTexManagerSettings {
 	templateTechreport: string,
 	templateUnpublished: string
 	enableBibtexFormatting: boolean
+	useDefaultFolder: boolean;
+	customFolder: string;
+	fileName: string;
 
 }
 
@@ -40,7 +43,10 @@ const DEFAULT_SETTINGS: BibTexManagerSettings = {
 	templateProceedings: "",
 	templateTechreport: "",
 	templateUnpublished: "",
-	enableBibtexFormatting: false
+	enableBibtexFormatting: false,
+	useDefaultFolder: true,
+	customFolder: "",
+	fileName: "Untitled"
 }
 
 const BIBTEX_TYPES: Array<string> = [
@@ -60,25 +66,6 @@ const BIBTEX_TYPES: Array<string> = [
 	"Unpublished"
 ]
 
-export abstract class StringHelper {
-	public static sanitizeKeyString(key: string): string {
-		const allLowerCase = key.toLowerCase();
-		return allLowerCase.charAt(0).toUpperCase() + allLowerCase.slice(1);
-	}
-
-	public static trim(str: string, trim: string): string {
-		let start = 0;
-		let end = str.length;
-
-		while (start < end && str[start] === trim)
-			++start;
-
-		while (end > start && str[end - 1] === trim)
-			--end;
-
-		return (start > 0 || end < str.length) ? str.substring(start, end) : str;
-	}
-}
 export default class BibTeXManager extends Plugin {
 	settings: BibTexManagerSettings;
 
@@ -92,6 +79,15 @@ export default class BibTeXManager extends Plugin {
 				new InsertBibTexModal(this.app, this.settings).open();
 			}
 		});
+
+		this.addCommand({
+			id: 'create-bibtex',
+			name: 'Create',
+			callback: () => {
+				new CreateBibTexModal(this.app, this.settings).open();
+			}
+		});
+
 
 		this.addSettingTab(new BibTeXManagerSettingTab(this.app, this));
 
@@ -127,7 +123,7 @@ export default class BibTeXManager extends Plugin {
 	}
 }
 
-class InsertBibTexModal extends Modal {
+class BibTexModal extends Modal {
 	bibtex: string;
 	template: string;
 	settings: BibTexManagerSettings;
@@ -150,6 +146,76 @@ class InsertBibTexModal extends Modal {
 		return "";
 	}
 
+	async formatBibTexEntry(generator: CitationGenerator, entry: Entry, template?: string = "") {
+		if (!template) {
+			return "";
+		}
+
+		await generator.createEngine();
+
+		generator.addCitation(entry);
+
+		const mapping = {
+			"type": entry.type,
+			"citekey": (<any>entry).key,
+			"id": (<any>entry).key,
+			"bibliography": generator.getBibliography(),
+			"citation": generator.getCitation((<any>entry).key)
+		}
+
+		const fields = Object.assign(mapping, entry.fields);
+		Object.keys(fields).forEach(key => {
+			const value = fields[key];
+			const regex = new RegExp(`{{(\\w+\\|)?${key}}}`, "g");
+			template = template.replace(regex, value);
+		})
+
+		return template;
+	}
+	private getFileParent() {
+		if (!this.settings.useDefaultFolder) {
+			let folder = this.settings.customFolder;
+			const abstractFile = this.app.vault.getAbstractFileByPath(folder);
+			if (abstractFile && 'children' in (abstractFile as TFolder)) {
+				return abstractFile as TFolder;
+			} else {
+				new Notice(`Error opening folder '${folder}'!`);
+				throw new Error(`Could not open the folder at '${folder}'`);
+			}
+		}
+
+		let lastFile = this.app.workspace.getActiveFile();
+		let path = !!lastFile ? lastFile.path : '';
+		return this.app.fileManager.getNewFileParent(path);
+	}
+
+	private generateNewFileNameInFolder(fName: string) {
+		const tfolder = this.getFileParent();
+
+		// replace characters that are not allowed in file names
+		fName = fName.replace(/[/\\?%*:|"<>\(\)]/g, '');
+
+		let newFilePath = tfolder.path;
+		let untitleds = tfolder.children
+			.filter((c) => c.name.startsWith(fName))
+			.map((c) => c.name);
+
+		let fileName = '';
+		for (let i = 0; i <= untitleds.length; i++) {
+			fileName = `${fName}${i > 0 ? ' ' + (i + 1) : ''}.md`;
+			if (!untitleds.includes(fileName)) {
+				break;
+			}
+		}
+		return `${newFilePath}/${fileName}`;
+	}
+	onClose() {
+		const { contentEl } = this;
+		contentEl.empty();
+	}
+}
+
+class InsertBibTexModal extends BibTexModal {
 	async onSubmit(text: string) {
 		const viewer = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!viewer) {
@@ -158,30 +224,12 @@ class InsertBibTexModal extends Modal {
 		}
 		try {
 			const generator = new CitationGenerator(this.settings.cslStyle, false);
-
 			// @ts-ignore
 			parse(text).entries.forEach(async (entry: Entry) => {
-				let file = await this.getTemplate(entry);
-				if (file) {
-					await generator.createEngine();
-					// generate citation
-					generator.addCitation(entry);
-
-					const mapping = {
-						"type": entry.type,
-						"citekey": (<any>entry).key,
-						"id": (<any>entry).key,
-						"bibliography": generator.getBibliography(),
-						"citation": generator.getCitation((<any>entry).key)
-					}
-
-					const fields = Object.assign(mapping, entry.fields);
-					Object.keys(fields).forEach(key => {
-						const value = fields[key];
-						const regex = new RegExp(`{{(\\w+\\|)?${key}}}`, "g");
-						file = file.replace(regex, value);
-					})
-					viewer.editor.replaceSelection(file + "\n");
+				const template = await this.getTemplate(entry);
+				const note = await this.formatBibTexEntry(generator, entry, template);
+				if (note) {
+					viewer.editor.replaceSelection(note + "\n");
 				}
 			})
 		} catch (e) {
@@ -238,13 +286,83 @@ class InsertBibTexModal extends Modal {
 					}));
 
 	}
-
-	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
-	}
 }
 
+
+class CreateBibTexModal extends BibTexModal {
+	async onSubmit(text: string) {
+		const viewer = this.app.workspace.getActiveViewOfType(MarkdownView);
+		if (!viewer) {
+			new Notice("No active editor");
+			return;
+		}
+		try {
+			const generator = new CitationGenerator(this.settings.cslStyle, false);
+			// @ts-ignore
+			parse(text).entries.forEach(async (entry: Entry) => {
+				const template = await this.getTemplate(entry);
+				const note = await this.formatBibTexEntry(generator, entry, template);
+				if (note) {
+					const fName = await this.formatBibTexEntry(generator, entry, this.settings.fileName);
+					const fileName = this.generateNewFileNameInFolder(fName);
+					const newFile = await this.app.vault.create(fileName, note, {});
+				}
+			})
+		} catch (e) {
+			console.error(e);
+		}
+
+		this.close();
+
+	}
+
+	async onOpen() {
+		const { contentEl } = this;
+
+		contentEl.createEl("h2", { text: "Create New Note From BibTeX" });
+
+
+		new Setting(contentEl)
+			.addTextArea(text => {
+				text.setPlaceholder('Paste the content of your BibTeX file')
+					.onChange((value) => {
+						this.bibtex = value
+					});
+				text.inputEl.addClass("bibtex-manager-template");
+			}).setClass("bibtex-manager-template-container");
+
+		new Setting(contentEl)
+			.setName('Apply template')
+			.addDropdown((cb) => {
+				cb.addOption("", "Auto detect");
+				BIBTEX_TYPES.forEach((type) =>
+					cb.addOption(type, type));
+
+				cb.onChange((value) => {
+					this.template = value ? BIBTEX_TYPES[value] : "";
+				});
+			});
+
+
+		new Setting(contentEl)
+			.addButton((btn) => {
+				btn
+					.setButtonText("Cancel")
+					.onClick(() => {
+						this.close();
+					});
+			})
+			.addButton((btn) =>
+				btn
+					.setButtonText("Create")
+					.setCta()
+					.onClick(() => {
+						this.close();
+						this.onSubmit(this.bibtex);
+					}));
+
+	}
+}
 class BibTeXManagerSettingTab extends PluginSettingTab {
 	plugin: BibTeXManager;
 
@@ -277,6 +395,7 @@ class BibTeXManagerSettingTab extends PluginSettingTab {
 			});
 		new Setting(containerEl)
 			.setName('Render BibTeX code block as citation')
+			.setDesc("Render BibTeX code block as citation using the selected CSL style.")
 			.addToggle(toggle => toggle
 				.setValue(this.plugin.settings.enableBibtexFormatting)
 				.onChange(async (value) => {
@@ -284,6 +403,46 @@ class BibTeXManagerSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 					new Notice("Please reload the app to apply the changes")
 				}));
+		new Setting(containerEl)
+			.setName('Default file name')
+			.setDesc(
+				"Default file name for new notes."
+			)
+			.addText((text) => {
+				text.setValue(this.plugin.settings.fileName);
+				text.onChange(async (value) => {
+					this.plugin.settings.fileName = value;
+					await this.plugin.saveSettings();
+				});
+			});
+		new Setting(containerEl)
+			.setName('Create in the default folder.')
+			.setDesc(
+				"Create the new files in the default folder as per Obsidian's configuration."
+			)
+			.addToggle((cb) => {
+				cb.setValue(this.plugin.settings.useDefaultFolder);
+				cb.onChange(async (value) => {
+					this.plugin.settings.useDefaultFolder = value;
+					await this.plugin.saveSettings();
+				});
+			});
+		const folderSetting = new Setting(containerEl)
+			.setName('Custom folder for new notes.')
+			.setDesc(
+				"Create the new files in the specified folder."
+			)
+			.addSearch((cb) => {
+				new FolderSuggest(this.app, cb.inputEl);
+				cb.setValue(this.plugin.settings.customFolder)
+				.setPlaceholder("folder 1/folder 2")
+					.onChange((folder) => {
+						this.plugin.settings.customFolder = folder;
+						this.plugin.saveSettings();
+					});
+				// @ts-ignore
+				cb.containerEl.addClass("bibtex-manager-search");
+			});
 
 		containerEl.createEl('h2', { text: "Templates" });
 

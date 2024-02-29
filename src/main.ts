@@ -1,4 +1,4 @@
-import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile } from 'obsidian';
+import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TFile, TFolder } from 'obsidian';
 import { FileSuggest, FolderSuggest, CSLSuggest } from './suggest';
 import { parse } from "@retorquere/bibtex-parser";
 import { Entry } from "@retorquere/bibtex-parser/grammar";
@@ -146,7 +146,7 @@ class BibTexModal extends Modal {
 		return "";
 	}
 
-	async formatBibTexEntry(generator: CitationGenerator, entry: Entry, template?: string = "") {
+	async formatBibTexEntry(generator: CitationGenerator, entry: Entry, template: string = "") {
 		if (!template) {
 			return "";
 		}
@@ -172,7 +172,8 @@ class BibTexModal extends Modal {
 
 		return template;
 	}
-	private getFileParent() {
+
+	getFileParent() {
 		if (!this.settings.useDefaultFolder) {
 			let folder = this.settings.customFolder;
 			const abstractFile = this.app.vault.getAbstractFileByPath(folder);
@@ -189,7 +190,7 @@ class BibTexModal extends Modal {
 		return this.app.fileManager.getNewFileParent(path);
 	}
 
-	private generateNewFileNameInFolder(fName: string) {
+	generateNewFileNameInFolder(fName: string) {
 		const tfolder = this.getFileParent();
 
 		// replace characters that are not allowed in file names
@@ -435,7 +436,7 @@ class BibTeXManagerSettingTab extends PluginSettingTab {
 			.addSearch((cb) => {
 				new FolderSuggest(this.app, cb.inputEl);
 				cb.setValue(this.plugin.settings.customFolder)
-				.setPlaceholder("folder 1/folder 2")
+					.setPlaceholder("folder 1/folder 2")
 					.onChange((folder) => {
 						this.plugin.settings.customFolder = folder;
 						this.plugin.saveSettings();

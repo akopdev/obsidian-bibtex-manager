@@ -1,10 +1,64 @@
 import { Entry } from "@retorquere/bibtex-parser/grammar";
 import { Engine } from 'citeproc';
-import { getLocale, getStyle, Author, Citation } from './helpers';
-import { htmlToMarkdown } from 'obsidian';
+import { requestUrl, Notice, RequestUrlParam, htmlToMarkdown } from 'obsidian';
 
-export class CitationGenerator {
-	citations: Array<Citation>;
+interface ICitation {
+	"id": string,
+	"type": string,
+	"title"?: string,
+	"URL"?: string,
+	"DOI"?: string,
+	"publisher"?: string,
+	"published"?: string,
+	"author"?: Array<IAuthor>,
+	"issued"?: {
+		"date-parts": [[number, number, number]],
+	},
+	"accessed"?: {
+		"date-parts": [[number, number, number]],
+	}
+};
+
+interface IAuthor {
+	"given"?: string,
+	"family"?: string
+}
+
+async function requestSafely(request: string | RequestUrlParam, rawUrl?: string) {
+	try {
+		return await requestUrl(request);
+	}
+	catch {
+		if (rawUrl) {
+			new Notice("Error: Could not connect to " + rawUrl);
+		}
+
+		return;
+	}
+}
+
+async function getLocale() {
+	const result = await requestSafely('https://raw.githubusercontent.com/citation-style-language/locales/master/locales-en-US.xml');
+
+	if (result === undefined) {
+		return;
+	}
+
+	return result.text;
+}
+
+async function getStyle(style: string) {
+	const result = await requestSafely('https://raw.githubusercontent.com/citation-style-language/styles/master/' + style + '.csl');
+
+	if (result === undefined) {
+		return;
+	}
+
+	return result.text;
+}
+
+export class Citation {
+	citations: Array<ICitation>;
 	citationIDs: Array<string>
 	engine: any;
 	style: string;
@@ -19,7 +73,7 @@ export class CitationGenerator {
 		this.citationIDs = new Array();
 	}
 
-	async createEngine() {
+	async init() {
 		const locale = await getLocale();
 
 		if (locale === undefined) {
@@ -47,10 +101,10 @@ export class CitationGenerator {
 		return true;
 	}
 
-	addCitation(entry: Entry) {
+	add(entry: Entry) {
 
 		// @ts-ignore
-		const citation: Citation = { "id": entry.key, "type": entry.type }
+		const citation: ICitation = { "id": entry.key, "type": entry.type }
 
 		Object.keys(entry.fields).forEach((key) => {
 			if (key === "year") {
@@ -67,10 +121,10 @@ export class CitationGenerator {
 
 		// @ts-ignore
 		if (entry.creators?.author) {
-			citation.author = new Array<Author>();
+			citation.author = new Array<IAuthor>();
 			// @ts-ignore
 			entry.creators.author.forEach(creator => {
-				const author: Author = {}
+				const author: IAuthor = {}
 				if (creator.firstName) {
 					author.given = creator.firstName;
 				}
@@ -88,7 +142,11 @@ export class CitationGenerator {
 		return true;
 	}
 
-	getCitation(id: string): string {
+	get(id: string): string {
+		if (this.engine === undefined || this.citations === undefined) {
+			return "";
+		}
+
 		const cite = this.engine.previewCitationCluster({
 			"citationID": id,
 			"citationItems": [this.citations[id]],
@@ -101,7 +159,7 @@ export class CitationGenerator {
 		return htmlToMarkdown(cite);
 	}
 
-	getBibliography(): string {
+	bibliography(): string {
 		if (this.engine === undefined || this.citations === undefined) {
 			return "";
 		}

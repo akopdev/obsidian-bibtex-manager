@@ -1,7 +1,7 @@
 {
 	"id": "obsidian-bibtex-manager",
 	"name": "BibTeX Manager",
-	"version": "0.8.3",
+	"version": "0.8.4",
 	"minAppVersion": "0.15.0",
 	"description": "Create notes and citations from BibTeX files.",
 	"author": "Akop Kesheshyan",

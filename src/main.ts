@@ -2,7 +2,7 @@ import { App, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, TF
 import { FileSuggest, FolderSuggest, CSLSuggest } from './suggest';
 import { parse } from "@retorquere/bibtex-parser";
 import { Entry } from "@retorquere/bibtex-parser/grammar";
-import { CitationGenerator } from "./citation-generator"
+import { Citation } from "./citation"
 
 interface BibTexManagerSettings {
 	cslStyle: string,
@@ -96,15 +96,16 @@ export default class BibTeXManager extends Plugin {
 				const codeBlock = el.createEl("div").createEl("pre").createEl("code");
 
 				try {
-					const generator = new CitationGenerator(this.settings.cslStyle, false);
-					await generator.createEngine();
+					const citation = new Citation(this.settings.cslStyle, false);
+
+					await citation.init()
 
 					const text = parse(source)
 					// @ts-ignore
 					text.entries.forEach(async (entry: Entry) => {
-						generator.addCitation(entry);
+						citation.add(entry);
 					})
-					const bib = generator.getBibliography()
+					const bib = citation.bibliography()
 					codeBlock.createEl("span", { text: bib, cls: "bibtex key" });
 
 				} catch (exception) {
@@ -146,21 +147,19 @@ class BibTexModal extends Modal {
 		return "";
 	}
 
-	async formatBibTexEntry(generator: CitationGenerator, entry: Entry, template: string = "") {
+	async formatBibTexEntry(citation: Citation, entry: Entry, template: string = "") {
 		if (!template) {
 			return "";
 		}
 
-		await generator.createEngine();
-
-		generator.addCitation(entry);
+		citation.add(entry);
 
 		const mapping = {
 			"type": entry.type,
 			"citekey": (<any>entry).key,
 			"id": (<any>entry).key,
-			"bibliography": generator.getBibliography(),
-			"citation": generator.getCitation((<any>entry).key)
+			"bibliography": citation.bibliography(),
+			"citation": citation.get((<any>entry).key)
 		}
 
 		const fields = Object.assign(mapping, entry.fields);
@@ -224,11 +223,14 @@ class InsertBibTexModal extends BibTexModal {
 			return;
 		}
 		try {
-			const generator = new CitationGenerator(this.settings.cslStyle, false);
+			const citation = new Citation(this.settings.cslStyle, false);
+
+			await citation.init()
+
 			// @ts-ignore
 			parse(text).entries.forEach(async (entry: Entry) => {
 				const template = await this.getTemplate(entry);
-				const note = await this.formatBibTexEntry(generator, entry, template);
+				const note = await this.formatBibTexEntry(citation, entry, template);
 				if (note) {
 					viewer.editor.replaceSelection(note + "\n");
 				}
@@ -298,13 +300,14 @@ class CreateBibTexModal extends BibTexModal {
 			return;
 		}
 		try {
-			const generator = new CitationGenerator(this.settings.cslStyle, false);
+			const citation = new Citation(this.settings.cslStyle, false);
+			await citation.init()
 			// @ts-ignore
 			parse(text).entries.forEach(async (entry: Entry) => {
 				const template = await this.getTemplate(entry);
-				const note = await this.formatBibTexEntry(generator, entry, template);
+				const note = await this.formatBibTexEntry(citation, entry, template);
 				if (note) {
-					const fName = await this.formatBibTexEntry(generator, entry, this.settings.fileName);
+					const fName = await this.formatBibTexEntry(citation, entry, this.settings.fileName) || "Untitled";
 					const fileName = this.generateNewFileNameInFolder(fName);
 					const newFile = await this.app.vault.create(fileName, note, {});
 				}

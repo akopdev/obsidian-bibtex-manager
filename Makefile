@@ -30,3 +30,9 @@ release:
 	@git tag $(VERSION)
 	@git push origin --tags
 	@echo "Release $(VERSION) successfully created!"
+
+# -------------------------------------------------------------------------------------------------
+#  format: @ Format the code
+#  -------------------------------------------------------------------------------------------------
+format:
+	@npx prettier 'src/**/*.ts' --write

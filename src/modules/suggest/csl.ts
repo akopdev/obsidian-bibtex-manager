@@ -1,5 +1,5 @@
 import { TextInputSuggest } from "./suggest";
-import { cslList, CSLItem } from "../utils";
+import { cslList, CSLItem } from "./csl-list";
 
 export class CSLSuggest extends TextInputSuggest<CSLItem> {
 	getSuggestions(inputStr: string): CSLItem[] {
@@ -11,7 +11,7 @@ export class CSLSuggest extends TextInputSuggest<CSLItem> {
 			}
 		});
 
-		return items
+		return items;
 	}
 
 	renderSuggestion(item: CSLItem, el: HTMLElement): void {

@@ -1,34 +1,36 @@
 import { Entry } from "@retorquere/bibtex-parser/grammar";
-import { Engine } from 'citeproc';
-import { requestUrl, Notice, RequestUrlParam, htmlToMarkdown } from 'obsidian';
+import { Engine } from "citeproc";
+import { requestUrl, Notice, RequestUrlParam, htmlToMarkdown } from "obsidian";
 
 interface ICitation {
-	"id": string,
-	"type": string,
-	"title"?: string,
-	"URL"?: string,
-	"DOI"?: string,
-	"publisher"?: string,
-	"published"?: string,
-	"author"?: Array<IAuthor>,
-	"issued"?: {
-		"date-parts": [[number, number, number]],
-	},
-	"accessed"?: {
-		"date-parts": [[number, number, number]],
-	}
-};
-
-interface IAuthor {
-	"given"?: string,
-	"family"?: string
+	id: string;
+	type: string;
+	title?: string;
+	URL?: string;
+	DOI?: string;
+	publisher?: string;
+	published?: string;
+	author?: Array<IAuthor>;
+	issued?: {
+		"date-parts": [[number, number, number]];
+	};
+	accessed?: {
+		"date-parts": [[number, number, number]];
+	};
 }
 
-async function requestSafely(request: string | RequestUrlParam, rawUrl?: string) {
+interface IAuthor {
+	given?: string;
+	family?: string;
+}
+
+async function requestSafely(
+	request: string | RequestUrlParam,
+	rawUrl?: string,
+) {
 	try {
 		return await requestUrl(request);
-	}
-	catch {
+	} catch {
 		if (rawUrl) {
 			new Notice("Error: Could not connect to " + rawUrl);
 		}
@@ -37,29 +39,9 @@ async function requestSafely(request: string | RequestUrlParam, rawUrl?: string)
 	}
 }
 
-async function getLocale() {
-	const result = await requestSafely('https://raw.githubusercontent.com/citation-style-language/locales/master/locales-en-US.xml');
-
-	if (result === undefined) {
-		return;
-	}
-
-	return result.text;
-}
-
-async function getStyle(style: string) {
-	const result = await requestSafely('https://raw.githubusercontent.com/citation-style-language/styles/master/' + style + '.csl');
-
-	if (result === undefined) {
-		return;
-	}
-
-	return result.text;
-}
-
 export class Citation {
 	citations: Array<ICitation>;
-	citationIDs: Array<string>
+	citationIDs: Array<string>;
 	engine: any;
 	style: string;
 	locale: string;
@@ -74,7 +56,9 @@ export class Citation {
 	}
 
 	async init() {
-		const locale = await getLocale();
+		const locale = await requestSafely(
+			"https://raw.githubusercontent.com/citation-style-language/locales/master/locales-en-US.xml",
+		);
 
 		if (locale === undefined) {
 			return;
@@ -82,7 +66,7 @@ export class Citation {
 
 		const sys = {
 			retrieveLocale: (lang: string) => {
-				return locale;
+				return locale.text;
 			},
 
 			retrieveItem: (id: string) => {
@@ -90,41 +74,42 @@ export class Citation {
 			},
 		};
 
-		const style = await getStyle(this.style);
+		const style = await requestSafely(
+			"https://raw.githubusercontent.com/citation-style-language/styles/master/" +
+				this.style +
+				".csl",
+		);
 
 		if (style === undefined) {
 			return;
 		}
 
-		this.engine = new Engine(sys, style);
+		this.engine = new Engine(sys, style.text);
 
 		return true;
 	}
 
 	add(entry: Entry) {
-
 		// @ts-ignore
-		const citation: ICitation = { "id": entry.key, "type": entry.type }
+		const citation: ICitation = { id: entry.key, type: entry.type };
 
 		Object.keys(entry.fields).forEach((key) => {
 			if (key === "year") {
-
 				// TODO: check if entry contains month and transform it to date-parts
 				citation["issued"] = {
-					"date-parts": [[+entry.fields[key][0], 1, 1]]
-				}
+					"date-parts": [[+entry.fields[key][0], 1, 1]],
+				};
 			} else {
-				citation[key] = entry.fields[key][0]
+				citation[key] = entry.fields[key][0];
 			}
 		});
-
 
 		// @ts-ignore
 		if (entry.creators?.author) {
 			citation.author = new Array<IAuthor>();
 			// @ts-ignore
-			entry.creators.author.forEach(creator => {
-				const author: IAuthor = {}
+			entry.creators.author.forEach((creator) => {
+				const author: IAuthor = {};
 				if (creator.firstName) {
 					author.given = creator.firstName;
 				}
@@ -147,19 +132,24 @@ export class Citation {
 			return "";
 		}
 
-		const cite = this.engine.previewCitationCluster({
-			"citationID": id,
-			"citationItems": [this.citations[id]],
-			"properties": {
-				"index": 0,
-				"noteIndex": 1
-			}
-		}, [], [], "html");
+		const cite = this.engine.previewCitationCluster(
+			{
+				citationID: id,
+				citationItems: [this.citations[id]],
+				properties: {
+					index: 0,
+					noteIndex: 1,
+				},
+			},
+			[],
+			[],
+			"html",
+		);
 
 		return htmlToMarkdown(cite);
 	}
 
-	bibliography(): string {
+	all(): string {
 		if (this.engine === undefined || this.citations === undefined) {
 			return "";
 		}
@@ -167,9 +157,9 @@ export class Citation {
 		this.engine.updateItems(this.citationIDs);
 
 		const bibliographyResult = this.engine.makeBibliography();
-		const bibliography = Array<string>()
+		const bibliography = Array<string>();
 		bibliographyResult[1]?.forEach((entry: string) => {
-			bibliography.push(htmlToMarkdown(entry) + "\n")
+			bibliography.push(htmlToMarkdown(entry) + "\n");
 		});
 		return bibliography.join("\n");
 	}

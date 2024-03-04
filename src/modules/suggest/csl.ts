@@ -11,7 +11,7 @@ export class CSLSuggest extends TextInputSuggest<CSLItem> {
 			}
 		});
 
-		return items
+		return items;
 	}
 
 	renderSuggestion(item: CSLItem, el: HTMLElement): void {

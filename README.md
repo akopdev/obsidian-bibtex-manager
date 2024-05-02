@@ -1,6 +1,6 @@
 # Obsidian BibTeX Manager
 
-![Create New Note in Obsidian BibteX Manager](docs/screenshots/cover.png)
+![Create New Note in Obsidian BibteX Manager](cover.png)
 
 Obsidian plug-in that simplifies the process of managing academic references by enabling the creation of literature notes from a BibTeX entry, 
 displaying formatted reference lists, and generating citations instantly. 

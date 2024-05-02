@@ -1,9 +1,9 @@
 {
 	"id": "obsidian-bibtex-manager",
 	"name": "BibTeX Manager",
-	"version": "0.8.6",
+	"version": "0.8.7",
 	"minAppVersion": "0.15.0",
-	"description": "Create notes and citations from BibTeX files.",
+	"description": "Obsidian plug-in that simplifies the process of managing academic references by enabling the creation of literature notes from a BibTeX entry, displaying formatted reference lists, and generating citations instantly.",
 	"author": "Akop Kesheshyan",
 	"authorUrl": "https://github.com/akopdev",
 	"isDesktopOnly": false

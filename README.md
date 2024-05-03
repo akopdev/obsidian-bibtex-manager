@@ -9,19 +9,17 @@ This plug-in operates seamlessly on both desktop and mobile platforms, and does 
 
 ## Motivation
 
-For each reference in Obsidian I create a dedicated literature note that contains meta information about the source of citation. BibTeX is a common way to store references in academic writing,
-that is why I decided to create a plug-in that would allow me to easily create literature notes just by copy and pasting the entry and save time on manual data entry. 
+For each reference in Obsidian I create a dedicated literature note that contains meta information about the source of citation. BibTeX is a common way to store references in academic writing, that is why I decided to create a plug-in that would allow me to easily create literature notes just by copy and pasting the BibTeX entry. 
 
-The plug-in also supports automatic formatting of reference lists within the note, while keeping the original BibTeX entry unmodified. I use this feature to keep source BibTeX file unmodified, 
-while having a nicely formatted reference list in the note. 
+The plug-in also supports automatic formatting of reference lists within the note, while keeping the original BibTeX entry unmodified. I use this feature to keep source BibTeX file unmodified, while having a nicely formatted reference list in the note. 
 
 Unlike other plug-ins, I support mobile platform as a "first-class citizen", meaning there are no dependencies on external services or desktop-only features.
 
-You can use BibTeX entries from Zotero, Mendeley, or any other popular reference managers, as well as use rely on custom BibTeX implementation.
+You can add BibTeX entries from Zotero, Mendeley, or any other popular reference managers, as well as rely on custom BibTeX implementation.
 
 ## Features
 
-- Generate literature notes from BibTeX entries using customizable templates. This feature allows for the quick and easy organization of academic references.
+- Generate literature notes from BibTeX entries using customizable templates.
 - Automatically format your BibTeX entries as a reference list, creating a well-organized bibliography within your notes.
 - Insert citations directly into your notes.
 

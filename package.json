@@ -1,5 +1,5 @@
 {
-	"name": "obsidian-bibtex-manager",
+	"name": "bibtex-manager",
 	"description": "Create notes and citations from BibTeX files",
 	"main": "main.js",
 	"scripts": {

@@ -7,7 +7,7 @@ on:
       - "*" # Push events to matching any tag format, i.e. 1.0, 20.15.10
 
 env:
-  PLUGIN_NAME: obsidian-bibtex-manager
+  PLUGIN_NAME: bibtex-manager
 
 jobs:
   build:

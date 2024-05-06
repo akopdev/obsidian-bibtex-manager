@@ -50,23 +50,11 @@ export class SettingTab extends PluginSettingTab {
 			);
 		new Setting(containerEl)
 			.setName("Default file name")
-			.setDesc("Default file name for new notes.")
+			.setDesc("Default file name for new notes. You can use the same variables that are available in the templates.")
 			.addText((text) => {
 				text.setValue(this.plugin.settings.fileName);
 				text.onChange(async (value) => {
 					this.plugin.settings.fileName = value;
-					await this.plugin.saveSettings();
-				});
-			});
-		new Setting(containerEl)
-			.setName("Create in the default folder.")
-			.setDesc(
-				"Create the new files in the default folder as per Obsidian's configuration.",
-			)
-			.addToggle((cb) => {
-				cb.setValue(this.plugin.settings.useDefaultFolder);
-				cb.onChange(async (value) => {
-					this.plugin.settings.useDefaultFolder = value;
 					await this.plugin.saveSettings();
 				});
 			});
@@ -86,6 +74,13 @@ export class SettingTab extends PluginSettingTab {
 			});
 
 		containerEl.createEl("h2", { text: "Templates" });
+		const templateContainerEl = containerEl.createDiv();
+		templateContainerEl.innerHTML = "" +
+			"<p>List of valid variables: {{id}}, {{citekey}}, {{type}}, {{title}}, {{author}}, {{authors}}, {{journal}}, {{volume}}, {{pages}}, {{year}}, {{abstract}} and etc.</p>" + 
+			"<p>You can also use {{bibliography}} for the list of reference, or {{citation}} for inline citation format, as well as any custom keys used in your BibTeX entry.</p>" +
+			"<p>For more information, please refer to the <a href='https://github.com/akopdev/obsidian-bibtex-manager/tree/master/docs'>documentation</a>."
+		templateContainerEl.className = "bibtex-manager-template-desc";
+
 
 		BibTeXTypes.forEach((type) => {
 			new Setting(containerEl).setName(type).addSearch((cb) => {

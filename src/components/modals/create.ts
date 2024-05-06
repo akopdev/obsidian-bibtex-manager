@@ -1,10 +1,13 @@
-import { App, MarkdownView, Notice, Setting } from "obsidian";
+import { MarkdownView, Notice } from "obsidian";
 import { BaseModal } from "./base";
-import { BibTeXTypes } from "../settings";
 import { Citation } from "../../modules";
 import { parse } from "@retorquere/bibtex-parser";
+import { Entry } from "@retorquere/bibtex-parser/grammar";
+
 
 export class CreateModal extends BaseModal {
+	title = "Create";
+
 	async onSubmit(text: string) {
 		const viewer = this.app.workspace.getActiveViewOfType(MarkdownView);
 		if (!viewer) {
@@ -15,74 +18,35 @@ export class CreateModal extends BaseModal {
 			const citation = new Citation(this.settings.cslStyle, false);
 			await citation.init();
 			// @ts-ignore
-			parse(text).entries.forEach(async (entry: Entry) => {
+			const entries: Entry[] = parse(text).entries
+			for (const entry of entries) {
 				const template = await this.getTemplate(entry);
 				const note = await this.formatBibTexEntry(
 					citation,
 					entry,
 					template,
 				);
-				if (note) {
-					const fName =
-						(await this.formatBibTexEntry(
-							citation,
-							entry,
-							this.settings.fileName,
-						)) || "Untitled";
-					const fileName = this.generateNewFileNameInFolder(fName);
-					const newFile = await this.app.vault.create(
-						fileName,
-						note,
-						{},
-					);
+				const fName =
+					(await this.formatBibTexEntry(
+						citation,
+						entry,
+						this.settings.fileName,
+					)) || "Untitled";
+				const fileName = this.generateNewFileNameInFolder(fName);
+				const newFile = await this.app.vault.create(
+					fileName,
+					note,
+					{},
+				);
+				if (newFile){
+					await this.app.workspace.getLeaf("tab").openFile(newFile);
 				}
-			});
+			}
 		} catch (e) {
+			new Notice("Error processing BibTeX entries")
 			console.error(e);
 		}
 
 		this.close();
-	}
-
-	async onOpen() {
-		const { contentEl } = this;
-
-		contentEl.createEl("h2", { text: "Create New Note From BibTeX" });
-
-		new Setting(contentEl)
-			.addTextArea((text) => {
-				text.setPlaceholder(
-					"Paste the content of your BibTeX file",
-				).onChange((value) => {
-					this.bibtex = value;
-				});
-				text.inputEl.addClass("bibtex-manager-template");
-			})
-			.setClass("bibtex-manager-template-container");
-
-		new Setting(contentEl).setName("Apply template").addDropdown((cb) => {
-			cb.addOption("", "Auto detect");
-			BibTeXTypes.forEach((type) => cb.addOption(type, type));
-
-			cb.onChange((value) => {
-				this.template = value ? BibTeXTypes[value] : "";
-			});
-		});
-
-		new Setting(contentEl)
-			.addButton((btn) => {
-				btn.setButtonText("Cancel").onClick(() => {
-					this.close();
-				});
-			})
-			.addButton((btn) =>
-				btn
-					.setButtonText("Create")
-					.setCta()
-					.onClick(() => {
-						this.close();
-						this.onSubmit(this.bibtex);
-					}),
-			);
 	}
 }

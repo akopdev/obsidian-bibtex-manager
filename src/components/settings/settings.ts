@@ -15,7 +15,6 @@ export interface Settings {
 	templateTechreport: string;
 	templateUnpublished: string;
 	enableBibtexFormatting: boolean;
-	useDefaultFolder: boolean;
 	customFolder: string;
 	fileName: string;
 }

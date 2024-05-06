@@ -17,7 +17,6 @@ export const DefaultSettings: Settings = {
 	templateTechreport: "",
 	templateUnpublished: "",
 	enableBibtexFormatting: false,
-	useDefaultFolder: true,
 	customFolder: "",
 	fileName: "Untitled",
 };

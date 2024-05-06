@@ -18,3 +18,14 @@
 	width: 100%;
 	min-height: 200px;
 }
+
+.bibtex-manager-template-desc{
+	display: block;
+	color: var(--text-muted);
+    font-size: var(--font-ui-smaller);
+    margin-bottom: var(--size-4-4);
+    line-height: var(--line-height-tight);
+}
+.bibtex-manager-template-desc a{
+	margin-block-start: 0;
+}

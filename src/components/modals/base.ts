@@ -1,5 +1,5 @@
-import { App, Modal, Notice, TFile, TFolder } from "obsidian";
-import { Settings } from "../settings";
+import { App, Modal, Notice, TFile, TFolder, Setting } from "obsidian";
+import { BibTeXTypes, Settings } from "../settings";
 import { Citation } from "../../modules";
 import { Entry } from "@retorquere/bibtex-parser/grammar";
 
@@ -7,6 +7,7 @@ export class BaseModal extends Modal {
 	bibtex: string;
 	template: string;
 	settings: Settings;
+	title: string;
 
 	constructor(app: App, settings: Settings) {
 		super(app);
@@ -59,15 +60,13 @@ export class BaseModal extends Modal {
 	}
 
 	getFileParent() {
-		if (!this.settings.useDefaultFolder) {
-			let folder = this.settings.customFolder;
+		let folder = this.settings.customFolder;
+		// if custom folder is set, use it otherwise use the current file's folder
+		if (folder) {
 			const abstractFile = this.app.vault.getAbstractFileByPath(folder);
-			if (abstractFile && "children" in (abstractFile as TFolder)) {
-				return abstractFile as TFolder;
-			} else {
-				new Notice(`Error opening folder '${folder}'!`);
-				throw new Error(`Could not open the folder at '${folder}'`);
-			}
+			if (abstractFile instanceof TFolder) {
+				return abstractFile;
+			} 	
 		}
 
 		let lastFile = this.app.workspace.getActiveFile();
@@ -95,6 +94,53 @@ export class BaseModal extends Modal {
 		}
 		return `${newFilePath}/${fileName}`;
 	}
+
+	async onOpen() {
+		const { contentEl } = this;
+
+		contentEl.createEl("h2", { text: `${this.title} a note` });
+
+		new Setting(contentEl)
+			.addTextArea((text) => {
+				text.setPlaceholder(
+					"Paste the content of your BibTeX file",
+				).onChange((value) => {
+					this.bibtex = value;
+				});
+				text.inputEl.addClass("bibtex-manager-template");
+			})
+			.setClass("bibtex-manager-template-container");
+
+		new Setting(contentEl).setName("Apply template").addDropdown((cb) => {
+			cb.addOption("", "Auto detect");
+			BibTeXTypes.forEach((type) => cb.addOption(type, type));
+
+			cb.onChange((value) => {
+				this.template = value || "";
+			});
+		});
+
+		new Setting(contentEl)
+			.addButton((btn) => {
+				btn.setButtonText("Cancel").onClick(() => {
+					this.close();
+				});
+			})
+			.addButton((btn) =>
+				btn
+					.setButtonText(this.title)
+					.setCta()
+					.onClick(() => {
+						this.close();
+						this.onSubmit(this.bibtex);
+					}),
+			);
+	}
+
+	onSubmit(bibtex: string) {
+		throw new Error("Method not implemented.");
+	}
+
 	onClose() {
 		const { contentEl } = this;
 		contentEl.empty();

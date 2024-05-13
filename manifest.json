@@ -2,7 +2,7 @@
 	"id": "bibtex-manager",
 	"name": "BibTeX Manager",
 	"version": "0.8.8",
-	"minAppVersion": "0.15.0",
+	"minAppVersion": "0.15.12",
 	"description": "Create a literature notes from a BibTeX entries.",
 	"author": "Akop Kesheshyan",
 	"authorUrl": "https://github.com/akopdev",

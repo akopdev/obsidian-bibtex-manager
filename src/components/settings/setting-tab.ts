@@ -17,9 +17,7 @@ export class SettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl("h2", { text: "General" });
-
-		new Setting(this.containerEl)
+		new Setting(containerEl)
 			.setName("Citation style ID")
 			.addSearch((cb) => {
 				new CSLSuggest(this.app, cb.inputEl);

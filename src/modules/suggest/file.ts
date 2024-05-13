@@ -1,7 +1,8 @@
-import { TAbstractFile, TFile } from "obsidian";
-import { TextInputSuggest } from "./suggest";
+import { TAbstractFile, TFile, AbstractInputSuggest } from "obsidian";
 
-export class FileSuggest extends TextInputSuggest<TFile> {
+export class FileSuggest extends AbstractInputSuggest<TFile> {
+	textInputEl: HTMLInputElement;
+
 	getSuggestions(inputStr: string): TFile[] {
 		const abstractFiles = this.app.vault.getAllLoadedFiles();
 		const files: TFile[] = [];
@@ -25,8 +26,8 @@ export class FileSuggest extends TextInputSuggest<TFile> {
 	}
 
 	selectSuggestion(file: TFile): void {
-		this.inputEl.value = file.path;
-		this.inputEl.trigger("input");
+		this.textInputEl.value = file.path;
+		this.textInputEl.trigger("input");
 		this.close();
 	}
 }

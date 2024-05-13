@@ -1,7 +1,10 @@
-import { TextInputSuggest } from "./suggest";
 import { cslList, CSLItem } from "./csl-list";
+import { AbstractInputSuggest } from "obsidian";
 
-export class CSLSuggest extends TextInputSuggest<CSLItem> {
+
+export class CSLSuggest extends AbstractInputSuggest<CSLItem> {
+	textInputEl: HTMLInputElement;
+
 	getSuggestions(inputStr: string): CSLItem[] {
 		const lowerCaseInputStr = inputStr.toLowerCase();
 		const items: Array<CSLItem> = [];
@@ -19,8 +22,8 @@ export class CSLSuggest extends TextInputSuggest<CSLItem> {
 	}
 
 	selectSuggestion(item: CSLItem): void {
-		this.inputEl.value = item.id;
-		this.inputEl.trigger("input");
+		this.textInputEl.value = item.id;
+		this.textInputEl.trigger("input");
 		this.close();
 	}
 }

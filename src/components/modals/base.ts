@@ -1,13 +1,17 @@
-import { App, Modal, Notice, TFile, TFolder, Setting } from "obsidian";
+import { App, Modal, Notice, TFile, TFolder, Setting, TextAreaComponent } from "obsidian";
 import { BibTeXTypes, Settings } from "../settings";
 import { Citation } from "../../modules";
 import { Entry } from "@retorquere/bibtex-parser/grammar";
+import { BibTexProviders, BibTexProvider } from "../providers";
 
 export class BaseModal extends Modal {
 	bibtex: string;
 	template: string;
 	settings: Settings;
 	title: string;
+	text: TextAreaComponent;
+	fetchFrom: string;
+	provider: BibTexProvider | null;
 
 	constructor(app: App, settings: Settings) {
 		super(app);
@@ -66,7 +70,7 @@ export class BaseModal extends Modal {
 			const abstractFile = this.app.vault.getAbstractFileByPath(folder);
 			if (abstractFile instanceof TFolder) {
 				return abstractFile;
-			} 	
+			}
 		}
 
 		let lastFile = this.app.workspace.getActiveFile();
@@ -101,7 +105,51 @@ export class BaseModal extends Modal {
 		contentEl.createEl("h2", { text: `${this.title} a note` });
 
 		new Setting(contentEl)
+			.addSearch((text) => {
+				text.setPlaceholder("Enter a URL or arXiv ID").onChange((value) => {
+					this.provider = null;
+					if (!value) {
+						text.inputEl.removeClass("bibtex-manager-quick-add--not-found");
+						return;
+					}
+					for (const provider of BibTexProviders) {
+						const p = new provider(value)
+						const match = p.match();
+						if (match) {
+							this.provider = p;
+							break;
+						}
+					}
+					text.inputEl.toggleClass("bibtex-manager-quick-add--not-found", !!!this.provider);
+				});
+			})
+			.addButton((btn) =>
+				btn
+					.setButtonText("Fetch")
+					.setCta()
+					.onClick(async () => {
+						if (this.provider) {
+							btn.setDisabled(true);
+							btn.setButtonText("Fetching...");
+							const bibtex = await this.provider.fetch();
+							btn.setDisabled(false);
+							btn.setButtonText("Fetch");
+							if (bibtex) {
+								this.bibtex = bibtex;
+								this.text.setValue(bibtex);
+							}
+						}
+					}),
+			)
+			.setClass("bibtex-manager-quick-add");
+
+		// Separator with "or"
+		const separator = contentEl.createEl("div", { cls: "bibtex-manager-separator" });
+		separator.createSpan({ cls: "bibtex-manager-separator-text", text: "or" });
+
+		new Setting(contentEl)
 			.addTextArea((text) => {
+				this.text = text;
 				text.setPlaceholder(
 					"Paste the content of your BibTeX file",
 				).onChange((value) => {

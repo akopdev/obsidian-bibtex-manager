@@ -22,6 +22,7 @@ You can add BibTeX entries from Zotero, Mendeley, or any other popular reference
 - Generate literature notes from BibTeX entries using customizable templates.
 - Automatically format your BibTeX entries as a reference list, creating a well-organized bibliography within your notes.
 - Insert citations directly into your notes.
+- Fetch BibTeX entries from remote sources.
 
 ## Installation
 

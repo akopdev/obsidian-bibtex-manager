@@ -1,10 +1,12 @@
 {
 	"name": "bibtex-manager",
+	"version": "0.9.0",
 	"description": "Create notes and citations from BibTeX files",
 	"main": "main.js",
 	"scripts": {
 		"dev": "node esbuild.config.mjs",
-		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+		"build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [],
 	"author": "Akop Kesheshyan",

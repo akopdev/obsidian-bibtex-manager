@@ -47,6 +47,10 @@
 	box-shadow: 0 0 0 2px var(--background-modifier-error) !important;
 }
 
+.is-mobile .bibtex-manager-quick-add .setting-item-control button {
+	max-width: 80px !important;
+}
+
 .bibtex-manager-separator {
 	display: flex;
 	align-items: center;

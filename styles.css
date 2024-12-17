@@ -19,13 +19,50 @@
 	min-height: 200px;
 }
 
-.bibtex-manager-template-desc{
+.bibtex-manager-template-desc {
 	display: block;
 	color: var(--text-muted);
-    font-size: var(--font-ui-smaller);
-    margin-bottom: var(--size-4-4);
-    line-height: var(--line-height-tight);
+	font-size: var(--font-ui-smaller);
+	margin-bottom: var(--size-4-4);
+	line-height: var(--line-height-tight);
 }
-.bibtex-manager-template-desc a{
+
+.bibtex-manager-template-desc a {
 	margin-block-start: 0;
+}
+
+.bibtex-manager-quick-add .setting-item-info {
+	display: none;
+}
+
+.bibtex-manager-quick-add .search-input-container {
+	width: 100%;
+}
+
+.bibtex-manager-quick-add--not-found {
+	border-color: var(--background-modifier-error) !important;
+}
+
+.bibtex-manager-quick-add--not-found:focus {
+	box-shadow: 0 0 0 2px var(--background-modifier-error) !important;
+}
+
+.is-mobile .bibtex-manager-quick-add .setting-item-control button {
+	max-width: 80px !important;
+}
+
+.bibtex-manager-separator {
+	display: flex;
+	align-items: center;
+	margin: 20px 0;
+	text-align: center;
+}
+
+
+.bibtex-manager-separator::before,
+.bibtex-manager-separator::after {
+	content: "";
+	flex: 1;
+	border-top: 1px solid var(--background-modifier-border);
+	margin: 0 10px;
 }

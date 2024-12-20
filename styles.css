@@ -66,3 +66,13 @@
 	border-top: 1px solid var(--background-modifier-border);
 	margin: 0 10px;
 }
+
+.bibtex-manager-no-settings{
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	padding: 20px;
+	border: 0 !important;
+}

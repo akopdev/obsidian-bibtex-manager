@@ -18,6 +18,16 @@ export class BaseModal extends Modal {
 		this.settings = settings;
 	}
 
+	checkTemplatesExists(): boolean {
+		for (const type of BibTeXTypes) {
+			const templateName = "template" + type;
+			if (!this.settings[templateName]) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	async getTemplate(entry: Entry): Promise<string> {
 		const templateName =
 			entry.type.charAt(0).toUpperCase() + entry.type.slice(1);
@@ -102,8 +112,28 @@ export class BaseModal extends Modal {
 	async onOpen() {
 		const { contentEl } = this;
 
-		contentEl.createEl("h2", { text: `${this.title} a note` });
+		const isTemplateExists = this.checkTemplatesExists();
 
+		if (!isTemplateExists) {
+
+			contentEl.createEl("h2", { text: `Missed templates` });
+			const errorMessage = contentEl.createEl("div", { cls: "bibtex-manager-no-settings" });
+			errorMessage.createSpan({
+				cls: "bibtex-manager-no-settings-text", text: `Please set the template for each BibTeX entry type in plugin settings.`
+			});
+
+			new Setting(contentEl)
+				.addButton((btn) => {
+					btn.setButtonText("Open settings").setCta().onClick(() => {
+						const commands = (this.app as any).commands;
+						commands.executeCommandById("app:open-settings", { tab: "plugins/bibtex-manager" });
+						this.close();
+					});
+				});
+			return;
+		}
+
+		contentEl.createEl("h2", { text: `${this.title} a note` });
 		new Setting(contentEl)
 			.addSearch((text) => {
 				text.setPlaceholder("Enter a URL or arXiv ID").onChange((value) => {

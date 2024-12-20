@@ -1,6 +1,6 @@
 {
 	"name": "bibtex-manager",
-	"version": "0.9.0",
+	"version": "0.9.1",
 	"description": "Create notes and citations from BibTeX files",
 	"main": "main.js",
 	"scripts": {

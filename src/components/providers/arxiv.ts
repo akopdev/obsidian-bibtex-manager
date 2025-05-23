@@ -3,7 +3,7 @@ import { BibTexProvider } from "./base";
 
 export class ArXivProvider implements BibTexProvider {
 
-	id: string | null = null;
+	private id: string | null = null;
 
 	constructor(private url: string) {
 		this.url = url;

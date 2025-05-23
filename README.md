@@ -22,7 +22,7 @@ You can add BibTeX entries from Zotero, Mendeley, or any other popular reference
 - Generate literature notes from BibTeX entries using customizable templates.
 - Automatically format your BibTeX entries as a reference list, creating a well-organized bibliography within your notes.
 - Insert citations directly into your notes.
-- Fetch BibTeX entries from remote sources.
+- Fetch BibTeX entries from remote sources (arXiv, Google Books, etc).
 
 ## Installation
 
@@ -34,7 +34,7 @@ You can add BibTeX entries from Zotero, Mendeley, or any other popular reference
 
 ## Development
 
-This plugin is in active development. If you have any feature requests or bug reports, please open an issue on the GitHub repository.
+This plugin is in active development. If you have any feature requests or bug reports, please [open an issue](https://github.com/akopdev/obsidian-bibtex-manager/issues) on the GitHub repository.
 
 ```bash
 make help # Show available commands

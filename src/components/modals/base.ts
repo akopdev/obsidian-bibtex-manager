@@ -136,7 +136,7 @@ export class BaseModal extends Modal {
 		contentEl.createEl("h2", { text: `${this.title} a note` });
 		new Setting(contentEl)
 			.addSearch((text) => {
-				text.setPlaceholder("Enter a URL or arXiv ID").onChange((value) => {
+				text.setPlaceholder("Enter ISBN, arXiv URL or ID").onChange((value) => {
 					this.provider = null;
 					if (!value) {
 						text.inputEl.removeClass("bibtex-manager-quick-add--not-found");
@@ -161,12 +161,17 @@ export class BaseModal extends Modal {
 						if (this.provider) {
 							btn.setDisabled(true);
 							btn.setButtonText("Fetching...");
-							const bibtex = await this.provider.fetch();
-							btn.setDisabled(false);
-							btn.setButtonText("Fetch");
-							if (bibtex) {
-								this.bibtex = bibtex;
-								this.text.setValue(bibtex);
+							try {
+								const bibtex = await this.provider.fetch();
+								if (bibtex) {
+									this.bibtex = bibtex;
+									this.text.setValue(bibtex);
+								}
+							} catch (error) {
+								new Notice(`Failed to fetch BibTeX: ${error.message || error}`);
+							} finally {
+								btn.setDisabled(false);
+								btn.setButtonText("Fetch");
 							}
 						}
 					}),

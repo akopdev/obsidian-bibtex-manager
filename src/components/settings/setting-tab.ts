@@ -73,7 +73,7 @@ export class SettingTab extends PluginSettingTab {
 
 		containerEl.createEl("h2", { text: "Templates" });
 		const templateContainerEl = containerEl.createEl("div", { cls: "bibtex-manager-template-desc" });
-		templateContainerEl.createEl("p", { text: "List of valid variables: {{id}}, {{citekey}}, {{type}}, {{title}}, {{author}}, {{authors}}, {{journal}}, {{volume}}, {{pages}}, {{year}}, {{abstract}} and etc." })
+		templateContainerEl.createEl("p", { text: "List of valid variables: {{id}}, {{citekey}}, {{type}}, {{title}}, {{author}}, {{authors}}, {{journal}}, {{volume}}, {{pages}}, {{year}}, {{abstract}}, {{bibtex}} and etc." })
 		templateContainerEl.createEl("p", { text: "You can also use {{bibliography}} for the list of reference, or {{citation}} for inline citation format, as well as any custom keys used in your BibTeX entry." })
 		templateContainerEl.createEl("span", { text: "For more information, please refer to the " })
 		templateContainerEl.createEl("a", { text: "documentation", attr: { href: "https://github.com/akopdev/obsidian-bibtex-manager/tree/master/docs" } })

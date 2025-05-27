@@ -1,7 +1,7 @@
 import { App, Modal, Notice, TFile, TFolder, Setting, TextAreaComponent } from "obsidian";
 import { BibTeXTypes, Settings } from "../settings";
 import { Citation } from "../../modules";
-import { Entry } from "@retorquere/bibtex-parser/grammar";
+import { Entry, Field } from "@retorquere/bibtex-parser/grammar";
 import { BibTexProviders, BibTexProvider } from "../providers";
 
 export class BaseModal extends Modal {
@@ -44,6 +44,36 @@ export class BaseModal extends Modal {
 		return "";
 	}
 
+	toBibtex(entry: Entry): string {
+		// @ts-ignore
+		const { type, key, fields, creators } = entry;
+
+		const formatAuthor = (): string | undefined => {
+			// @ts-ignore
+			const authors = entry.creators?.author;
+			if (!authors || authors.length === 0) return undefined;
+			const formatted = authors.map(({ firstName, lastName }) => `${firstName} ${lastName}`);
+			return `{${formatted.join(' and ')}}`;
+		};
+
+		const formatField = ([rawField, value]: [string, Field]): string => {
+			const field = rawField.toLowerCase();
+			if (field === 'author') {
+				const authorStr = formatAuthor();
+				return authorStr ? `  author = ${authorStr},` : '';
+			}
+			const valueStr = Array.isArray(value) ? value.join(', ') : value;
+			return `  ${rawField} = {${valueStr}},`;
+		};
+
+		const fieldStrings = Object.entries(fields)
+			.map(formatField)
+			.filter(Boolean)
+			.join('\n');
+
+		return `@${type}{${key},\n${fieldStrings}\n}`;
+	}
+
 	async formatBibTexEntry(
 		citation: Citation,
 		entry: Entry,
@@ -61,6 +91,7 @@ export class BaseModal extends Modal {
 			id: (<any>entry).key,
 			bibliography: citation.all(),
 			citation: citation.get((<any>entry).key),
+			bibtex: this.toBibtex(entry)
 		};
 
 		const fields = Object.assign(mapping, entry.fields);

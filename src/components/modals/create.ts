@@ -9,11 +9,6 @@ export class CreateModal extends BaseModal {
 	title = "Create";
 
 	async onSubmit(text: string) {
-		const viewer = this.app.workspace.getActiveViewOfType(MarkdownView);
-		if (!viewer) {
-			new Notice("No active editor");
-			return;
-		}
 		try {
 			const citation = new Citation(this.settings.cslStyle, false);
 			await citation.init();
